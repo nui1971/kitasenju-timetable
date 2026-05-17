@@ -1,213 +1,447 @@
-# 北千住 下り時刻表アプリ 設計書 v1.0.0
+# 設計書（確定版）
+
+**プロジェクト名**：kitaayase-timetable
+**作成日**：2026-05-03
+**バージョン**：1.0
+**保存先**：`C:\_claude\projects\kitaayase-timetable\docs\design.md`
+
+> ⚠️ このドキュメントはソースコード・ユニットテストと常に同期を保つこと
+> 変更時は3点セット（ソース・テスト・設計書）を同時に更新する
+
+---
 
 ## 1. 概要
 
 | 項目 | 内容 |
-|------|------|
-| アプリ名 | 北千住 下り時刻表 |
-| 対象路線 | 東京メトロ千代田線 |
-| 対象駅 | 北千住駅（H22 / C18） |
-| 方向 | 下り（綾瀬・北綾瀬・松戸・柏・取手・我孫子方面） |
-| リポジトリURL | https://github.com/nui1971/kitasenju-timetable |
+|---|---|
+| アプリ名 | 北綾瀬 時刻表 |
+| 目的 | 外出前に北綾瀬駅の次の列車まで何分かを素早く確認する |
+| 対象ユーザー | 個人利用 |
+| 使用タイミング | 外出直前 |
+| URL | https://kitaayase-timetable-fdvl.vercel.app/ |
+| リポジトリ | https://github.com/nui1971/kitaayase-timetable |
 
 ---
 
-## 2. 技術スタック
+## 2. 画面仕様（確定版）
 
-| カテゴリ | 技術 |
-|----------|------|
-| フレームワーク | React 19 |
-| 言語 | TypeScript |
-| ビルドツール | Vite 8 |
-| CSSフレームワーク | Tailwind CSS v3 |
-| テスト | Vitest + React Testing Library |
-| デプロイ | Vercel |
+### 画面イメージ
 
----
+| 通常表示（5本） | 展開表示（10本） |
+|:---:|:---:|
+| ![メイン画面](./images/screenshot-main.png) | ![展開表示](./images/screenshot-expanded.png) |
 
-## 3. ファイル構成
+### 画面構成
 
-```
-kitasenju-timetable/
-├── index.html                  # アプリエントリ（PWA metaタグ含む）
-├── package.json
-├── vite.config.ts              # Vitest設定含む
-├── tailwind.config.js
-├── postcss.config.js
-├── tsconfig.json
-├── tsconfig.app.json
-├── docs/
-│   └── design.md              # 本設計書
-├── public/
-│   ├── manifest.json          # PWAマニフェスト
-│   └── icons/
-│       ├── icon-192.svg       # PWAアイコン 192x192
-│       └── icon-512.svg       # PWAアイコン 512x512（maskable）
-└── src/
-    ├── main.tsx               # Reactルート
-    ├── App.tsx                # メインコンポーネント
-    ├── index.css              # Tailwindディレクティブ + body スタイル
-    ├── timetable.ts           # 時刻表データ（WEEKDAY/HOLIDAY）
-    ├── utils/
-    │   └── timeUtils.ts       # 時刻変換ユーティリティ
-    └── test/
-        ├── setup.ts           # テストセットアップ（jest-dom）
-        ├── timetable.test.ts  # 時刻表データのテスト
-        ├── timeUtils.test.ts  # ユーティリティのテスト
-        └── App.test.tsx       # コンポーネントのテスト
-```
+| # | 領域 | 内容 |
+|---|---|---|
+| 1 | ヘッダー | 路線記号（C20）・駅名・ローマ字表記／現在時刻・日付（曜日） |
+| 2 | ダイヤバッジ | 「平日」「土・休日」の切り替えタブ（自動＋手動） |
+| 3 | フィルターバー | 行先別の表示/非表示トグル（localStorage永続化） |
+| 4 | 次の列車カード | 発車時刻・行先・種別・あと何分（60分超は「X時間Y分」） |
+| 5 | 列車リスト | デフォルト5本、「▼ さらに表示（+5本）」で10本に展開 |
+| 6 | 翌日接続 | 残り5本未満になると翌日データで補完し常に5本（展開時10本）を表示。区切り表示なし |
+| 7 | フッター | データ出典表記 |
 
 ---
 
-## 4. 機能仕様
+### 2-1. 全体
 
-### 4.1 時刻表表示
-- 現在時刻以降の列車を全件表示する
-- 過去の列車は直近3本のみ薄く（opacity-35）表示する
-- 次の電車をヘッダーのバナー（緑背景）でハイライト表示する
-- 「あとN分」で次の電車までの待ち時間を表示する
-
-### 4.2 ダイヤ自動切替（平日/土休日）
-- `getDay()` の返り値で判定する
-  - 0（日曜）または 6（土曜）→ 土休日ダイヤ（HOLIDAY）
-  - 1〜5（月〜金）→ 平日ダイヤ（WEEKDAY）
-- 10秒ごとに時刻を自動更新する
-
-### 4.3 フィルター機能
-- 「北綾瀬行きのみ」ボタンで北綾瀬行きのみ表示するフィルターをトグルする
-- フィルター状態は `localStorage`（キー: `kitasenju_filter_kitaayase`）に永続化する
-
-### 4.4 0〜3時台の翌日扱いロジック
-- 0:00〜3:59 は「当日の深夜帯」として扱い、時刻をずらして比較する
-- 例：00:06 → `(0+24)*60+6 = 1446分` として計算する
+| 要素 | 値 |
+|---|---|
+| 背景色 | `#0d1526` |
+| フォント | sans-serif |
+| 最大幅 | 390px（iPhone 15 Pro 基準）・中央揃え |
+| 画面構成 | 1画面完結（画面遷移なし・スクロールのみ） |
 
 ---
 
-## 5. データ仕様
+### 2-2. ヘッダー
 
-| 種別 | 件数 | 北綾瀬行き | 始発 |
-|------|------|-----------|------|
-| 平日（WEEKDAY） | 265本 | 62本 | 2本（04:54・00:48） |
-| 土休日（HOLIDAY） | 201本 | 54本 | 2本（04:54・00:48） |
+| 要素 | 値 |
+|---|---|
+| padding | 14px 16px 10px |
+| border-bottom | 0.5px solid rgba(255,255,255,0.08) |
+| C20バッジ | background `#006400`・color `#fff`・font-size 11px・font-weight 500・padding 2px 7px・border-radius 4px |
+| 駅名「北綾瀬」 | color `#fff`・font-size 24px・font-weight 700 |
+| ローマ字「Kita-Ayase」 | color `#8a9bb5`・font-size 11px・margin-top 2px |
+| 現在時刻 | color `#fff`・font-size 32px・font-weight 300（秒なし・1分ごと更新） |
+| 日付 | color `#8a9bb5`・font-size 11px・右寄せ・形式：YYYY/MM/DD (曜) |
+| 終電後（hours≥5） | 「YYYY/MM/DD (曜) → 翌 MM/DD (曜)」 |
+| 深夜切替（hours＜5） | 「YYYY/MM/DD (曜)」のみ（翌日矢印なし） |
 
-### データ型定義
+---
+
+### 2-3. ダイヤバッジエリア
+
+| 要素 | 値 |
+|---|---|
+| padding | 10px 16px 4px |
+| 選択中バッジ | background `#006400`・color `#fff`・font-size 12px・font-weight 500・padding 4px 12px・border-radius 6px |
+| 非選択バッジ | background `rgba(255,255,255,0.07)`・color `#8a9bb5`・font-size 11px |
+| 自動切替 | 月〜金：平日・土日祝：土・休日 |
+| 手動切替 | タップで切替可能 |
+
+---
+
+### 2-4. フィルターエリア
+
+| 要素 | 値 |
+|---|---|
+| padding | 5px 16px 8px |
+| チェックボックス | accent-color `#006400`・14px |
+| ラベル | 「綾瀬行を表示しない」・color `#c8d6e8`・font-size 12px |
+| 永続化 | localStorage に保存・次回起動時も維持 |
+
+---
+
+### 2-5. 次の列車カード
+
+`<main>` の外（フレックスレイアウト内の固定領域）に配置するため、リストをスクロールしても常に表示される。
+
+| 要素 | 値 |
+|---|---|
+| コンポーネント | `NextTrainCard.tsx`（独立コンポーネント） |
+| 配置 | FilterBar と main の間（スクロール対象外） |
+| margin | 12px 16px 0 |
+| background | `linear-gradient(135deg, #0f2a4a, #0a2040)` |
+| border | 0.5px solid rgba(0,100,0,0.5) |
+| border-radius | 12px |
+| padding | 14px 16px |
+| 「次の列車」ラベル | color `#4a9e6a`・font-size 12px・margin-bottom 6px |
+| 時刻 | color `#fff`・font-size 42px・font-weight 300 |
+| 行き先 | color `#fff`・font-size 18px・font-weight 500 |
+| 種別バッジ | 下記バッジ仕様参照 |
+| レイアウト | 時刻・行き先・種別を1行横並び（gap 10px・flex-wrap） |
+| 「あと XX 分」 | color `#4a9e6a`・font-size 16px・font-weight 500 |
+
+---
+
+### 2-6. 種別バッジ
+
+| 種別 | background | color |
+|---|---|---|
+| 普通 | `#3a4a5a` | `#c8d6e8` |
+| 準急 | `#1a3a7a` | `#90b8f0` |
+| 急行 | `#7a1a1a` | `#f09090` |
+
+共通：font-size 10px・font-weight 500・padding 2px 7px・border-radius 4px・white-space nowrap
+
+---
+
+### 2-7. 列車リスト
+
+| 要素 | 値 |
+|---|---|
+| ヘッダー | 「綾瀬・代々木上原方面」・color `#c8d6e8`・font-size 11px・font-weight 500 |
+| padding | 0 16px 10px・gap 5px |
+| 各行 padding | 9px 12px・border-radius 9px |
+| 先頭行 | background `rgba(0,100,0,0.18)`・border `0.5px solid rgba(0,100,0,0.35)` |
+| その他の行 | background `rgba(255,255,255,0.04)` |
+| 時刻 | color `#fff`・font-size 18px・font-weight 300・min-width 46px |
+| 行き先 | color `#c8d6e8`・font-size 11px・flex 1 |
+| XX分後（先頭） | color `#4a9e6a`・font-size 11px・font-weight 500 |
+| XX分後（その他） | color `#8a9bb5`・font-size 11px・font-weight 500 |
+| デフォルト表示 | 5本 |
+
+---
+
+### 2-8. 展開ボタン
+
+| 状態 | テキスト |
+|---|---|
+| 閉じているとき | 「▼ さらに表示（+5本）」 |
+| 開いているとき | 「▲ 追加分を非表示」 |
+
+| 要素 | 値 |
+|---|---|
+| margin | 0 16px 14px |
+| padding | 8px |
+| background | `rgba(255,255,255,0.04)` |
+| border-radius | 8px |
+| color | `#8a9bb5`・font-size 11px・中央揃え |
+| 展開後 | +5本（合計10本）表示 |
+
+---
+
+### 2-9. 分後の表示形式
+
+| 条件 | 表示形式 |
+|---|---|
+| 60分未満 | 「XX分後」 |
+| 60分ちょうど | 「1時間後」 |
+| 60分超 | 「X時間YY分後」 |
+
+次の列車カードの「あとXX分」も同形式（「あと X時間Y分」）。
+
+---
+
+## 3. 機能仕様
+
+### 3-1. 現在時刻管理
+
+| 項目 | 仕様 |
+|---|---|
+| タイムゾーン | Asia/Tokyo（日本時間） |
+| 更新頻度 | 1分ごと |
+| カスタムフック | `useCurrentTime.ts` |
+
+---
+
+### 3-2. 列車フィルタリング
+
+**入力**
 
 ```typescript
+trains: Train[]          // 時刻表データ
+now: { hour: number, minute: number }  // 現在時刻
+hideAyase: boolean       // 綾瀬行非表示フラグ
+```
+
+**処理**
+
+```
+1. 現在時刻より後の列車を抽出
+2. hideAyase が true の場合、綾瀬行きを除外
+3. 結果が0件（終電後）の場合は翌日ダイヤに切替
+```
+
+**出力**
+
+```typescript
+Train[]  // フィルタリング済み列車配列（時刻順）
+```
+
+**テスト条件**
+
+| ケース | 入力 | 期待する出力 |
+|---|---|---|
+| 通常 | 18:24 | 18:26以降の列車 |
+| フィルターあり | 18:24・綾瀬非表示 | 18:26以降・綾瀬行除外 |
+| 終電後（平日） | 00:16 | 翌日ダイヤの全列車 |
+| 金曜終電後 | 00:16 | 土休日ダイヤ |
+| 日曜終電後 | 00:13 | 平日ダイヤ |
+
+---
+
+### 3-2-1. 祝日判定
+
+**データソース**
+
+| 項目 | 値 |
+|---|---|
+| API | `https://holidays-jp.github.io/api/v1/{year}/date.json` |
+| 取得タイミング | アプリ起動時（当年・翌年を並列取得） |
+| キャッシュ | sessionStorage・キー：`holidays_YYYY` |
+| 失敗時 | 空セットを使用（土日のみで判定） |
+
+**判定ロジック（`getDayType(date, holidays)`）**
+
+```
+土曜 OR 日曜          → 土休日ダイヤ
+holidays に含まれる日 → 土休日ダイヤ
+それ以外              → 平日ダイヤ
+```
+
+**テスト条件**
+
+| ケース | 日付 | holidays | 期待する出力 |
+|---|---|---|---|
+| 祝日（日） | 2026-05-03（憲法記念日） | 含む | holiday |
+| 祝日（月） | 2026-05-04（みどりの日） | 含む | holiday |
+| 平日 | 2026-05-01（金） | 含まない | weekday |
+| 土曜 | 2026-05-02 | 空 | holiday |
+
+---
+
+### 3-3. 終電後の翌日ダイヤ切替
+
+| 条件 | 動作 |
+|---|---|
+| 当日の残り列車が0件 | 翌日ダイヤに自動切替 |
+| 翌日が月〜金 | 平日ダイヤ |
+| 翌日が土日祝 | 土休日ダイヤ |
+| ヘッダー表示（通常時） | 「2026/05/01 (金)」 |
+| ヘッダー表示（終電後・hours≥5） | 「2026/05/01 (金) → 翌 05/02 (土)」 |
+| ヘッダー表示（深夜切替・hours＜5） | 「2026/05/03 (日)」（翌日矢印なし） |
+
+---
+
+### 3-4. 深夜帯の翌日接続表示
+
+| 状態 | 条件 | 動作 |
+|---|---|---|
+| 通常 | 残り5本以上 | 当日の列車のみ表示 |
+| 接続表示 | 残り5本未満（終電前） | 当日残り＋翌日データをシームレスに統合し5本（展開時10本）表示。区切り行なし |
+| 翌日切替 | 終電通過後（残り0本） | 翌日ダイヤのみ表示 |
+
+サービス日の定義：0〜4時台は前日のサービス日（例：日曜00:30 → 土曜ダイヤ）
+
+---
+
+### 3-5. フィルター永続化
+
+| 項目 | 仕様 |
+|---|---|
+| 保存先 | localStorage |
+| キー名 | `kitaayase_hide_ayase` |
+| 値 | `true` / `false` |
+| タイミング | チェックボックス変更時に即時保存 |
+| 読み込み | アプリ起動時 |
+
+---
+
+## 4. データ仕様
+
+### 4-1. 型定義
+
+```typescript
+export type TrainType = '普通' | '準急' | '急行'
+export type DayType = 'weekday' | 'holiday'
+
 export interface Train {
-    time: string    // "HH:MM" 形式
-    dest: string    // 行き先（例: "我孫子（千葉県）"）
-    origin: boolean // 当駅始発かどうか
+  hour: number        // 0〜23
+  minute: number      // 0〜59
+  destination: string // 行き先（例：綾瀬・代々木上原）
+  trainType: TrainType
+}
+
+export interface Timetable {
+  weekday: Train[]
+  holiday: Train[]
 }
 ```
 
 ---
 
-## 6. 時刻計算ロジック
-
-### timeToMin(time: string): number
-時刻文字列（"HH:MM"）を分単位の整数に変換する。
-0〜3時台は24時間分加算して深夜扱いにする。
-
-| 入力 | 計算 | 出力 |
-|------|------|------|
-| "07:30" | 7×60+30 | 450 |
-| "04:54" | 4×60+54 | 294 |
-| "00:06" | (0+24)×60+6 | 1446 |
-| "03:59" | (3+24)×60+59 | 1679 |
-
-### nowToMin(h: number, m: number): number
-現在時刻（時・分）を同様に分単位に変換する。
-
----
-
-## 7. テスト仕様
-
-| ファイル | テスト数 | 対象 |
-|----------|---------|------|
-| `timetable.test.ts` | 10件 | データ件数・形式・件数カウント・始発件数 |
-| `timeUtils.test.ts` | 11件 | 時刻変換・表示名変換・行き先判定 |
-| `App.test.tsx` | 7件 | 表示テキスト・フィルター動作 |
-| **合計** | **28件** | |
-
----
-
-## 8. PWA仕様
-
-### manifest.json
-
-| 項目 | 値 |
-|------|----|
-| name | 北千住 下り時刻表 |
-| short_name | 北千住↓ |
-| display | standalone |
-| background_color | #0d1526 |
-| theme_color | #00843d |
-| orientation | portrait |
-
-### アイコンデザイン
-- **背景**: 紺色（#0d1526）、角丸
-- **駅名標**: 緑帯（#00843d）の中に黒帯、白文字「北千住」
-- **上部**: 「千代田線」緑テキスト
-- **左上**: H22・C18 の路線バッジ
-- **下部**: 下向き緑矢印
-
----
-
-## 9. UIカラー・レイアウト仕様
-
-| 用途 | カラーコード |
-|------|-------------|
-| 背景 | #0d1526 |
-| 千代田線グリーン | #00843d |
-| 次の電車ハイライト背景 | #0a3020 |
-| 行区切り線 | #1a2640 |
-
-### ヘッダー（sticky）
-1. 路線バッジ「千代田線」＋ 駅名「北千住 Kita-Senju」＋ 下向き矢印 ＋「下り」
-2. 現在時刻（緑・monospace）＋ 平日/土休日バッジ ＋ フィルタートグルボタン
-3. 次の電車バナー（緑背景）
-
-### 列車1行レイアウト
-```
-[時刻 monospace 太字]  [行き先バッジ]  [始発ラベル]  ................  [各駅停車 右寄せ]
-```
-
----
-
-## 10. デプロイ手順
-
-```bash
-# 1. テスト
-npm run test:run
-
-# 2. ビルド
-npm run build
-
-# 3. GitHubへプッシュ
-git add .
-git commit -m "feat: ..."
-git push origin main
-
-# 4. Vercel 自動デプロイ（mainブランチ push で自動起動）
-```
-
----
-
-## 11. ダイヤ改正時の対応手順
-
-1. `src/timetable.ts` の `WEEKDAY` および `HOLIDAY` 配列を新ダイヤデータで更新する
-2. `src/test/timetable.test.ts` の件数アサーション（265件・201件等）を新件数に合わせて修正する
-3. `npm run test:run` でテストがPASSすることを確認する
-4. `npm run build` でビルドエラーがないことを確認する
-5. GitHubへpushしてVercel自動デプロイを確認する
-
----
-
-## 12. 既知の問題・将来課題
+### 4-2. データソース
 
 | 項目 | 内容 |
-|------|------|
-| 祝日判定未対応 | 現在は土・日のみ土休日判定。祝日は平日ダイヤが適用される |
-| 終電後翌日切替 | 00:48以降の動作（翌日4:54まで表示なし）の検証が必要 |
-| 分ゼロ跨ぎ | 23:59→00:00の境界での挙動検証 |
-| オフライン対応 | Service Worker未導入。PWAとして完全オフライン化するには追加実装が必要 |
+|---|---|
+| データ種別 | ハードコード |
+| 理由 | ODPT API のデータ精度が不十分なため廃止 |
+| 更新方法 | ダイヤ改正時に timetable.ts を手動更新 |
+| 将来方針 | ODPT API は使用しない |
+
+---
+
+## 5. 技術スタック（確定版）
+
+| レイヤー | 技術 | バージョン |
+|---|---|---|
+| フレームワーク | React | v19.x |
+| 言語 | TypeScript | v5.8.x |
+| ビルドツール | Vite | v8.x |
+| テスト | Vitest + React Testing Library | v4.x |
+| ホスティング | Vercel（無料プラン） | - |
+| バージョン管理 | GitHub（Public） | - |
+
+---
+
+## 6. ファイル構成
+
+```
+kitaayase-timetable/
+├── src/
+│   ├── data/
+│   │   └── timetable.ts          # 時刻表データ・型定義・ハードコード
+│   ├── services/
+│   │   └── timetableService.ts   # ODPT API取得・キャッシュ・フォールバック
+│   ├── components/
+│   │   ├── Header.tsx            # ヘッダー（駅名・現在時刻）
+│   │   ├── DayBadge.tsx          # 平日／土休日バッジ
+│   │   ├── FilterBar.tsx         # フィルターエリア
+│   │   ├── TrainList.tsx         # 列車リスト全体・展開ボタン
+│   │   └── TrainRow.tsx          # 1列車の行
+│   ├── hooks/
+│   │   ├── useCurrentTime.ts     # 現在時刻（1分ごと更新）
+│   │   ├── useTimetable.ts       # フィルタリング・翌日切替・サービス日計算
+│   │   └── useFilter.ts          # 行先フィルター・localStorage永続化
+│   ├── test/
+│   │   ├── setup.ts
+│   │   ├── useCurrentTime.test.ts
+│   │   ├── useTimetable.test.ts
+│   │   ├── useFilter.test.ts
+│   │   └── timetableService.test.ts
+│   ├── App.tsx
+│   ├── index.css
+│   └── main.tsx
+├── docs/
+│   ├── design.md                 # このファイル（設計書確定版）
+│   └── images/
+│       ├── screenshot-main.png   # 通常表示（5本）
+│       └── screenshot-expanded.png # 展開表示（10本）
+├── .env                          # 環境変数（Git管理外）
+├── .env.example                  # 環境変数サンプル（Git管理）
+├── vite.config.ts
+├── tsconfig.app.json
+└── package.json
+```
+
+---
+
+## 7. 環境変数
+
+| 変数名 | 用途 | 保存場所 |
+|---|---|---|
+| `VITE_ODPT_TOKEN` | ODPT APIアクセストークン | `.env`（Git管理外） |
+
+> 実際のトークン値は `C:\_claude\tools\api-keys.md` に記録
+
+---
+
+## 8. 運用ルール
+
+### デプロイ手順
+
+```powershell
+# ローカルでビルド確認してからpush
+npm run build
+git add .
+git commit -m "fix: [変更内容]"
+git push
+# → Vercel が自動でビルド・デプロイ（約30秒）
+```
+
+### 更新時のルール
+
+```
+コード変更
+  → ユニットテストを更新（npm run test:run で確認）
+  → 設計書（このファイル）を更新
+  → git push
+```
+
+### ダイヤ改正時の対応
+
+```
+1. ODPT API が自動対応（API版）
+2. ハードコードデータを更新（フォールバック用）
+3. 設計書のデータ仕様を確認・更新
+```
+
+---
+
+## 9. 既知の問題・今後の課題
+
+| # | 内容 | 優先度 | 状態 |
+|---|---|---|---|
+| 1 | 他駅（綾瀬）への拡張 | ⚪ | 別アプリとして作成予定 |
+| 2 | 通知機能（出発N分前） | ⚪ | 将来対応 |
+| 3 | オフライン対応 | ⚪ | 将来対応 |
+
+---
+
+## 10. 変更履歴
+
+| 日付 | バージョン | 変更内容 |
+|---|---|---|
+| 2026-05-01 | 0.1 | 初回リリース（ハードコード版） |
+| 2026-05-01 | 0.2 | PWA設定追加 |
+| 2026-05-01 | 0.3 | ODPT API切り替え |
+| 2026-05-03 | 1.0 | UIデザイン確定・設計書作成 |
+| 2026-05-04 | 1.1 | 画面イメージ・画面構成を追加 |
+| 2026-05-04 | 1.2 | 次の列車カードを main 外の固定領域に移動（sticky 廃止） |
+| 2026-05-04 | 1.3 | 祝日判定機能を追加（Holidays JP API） |
+| 2026-05-05 | 1.4 | ODPT API を廃止・ハードコードデータに完全切り替え |
+| 2026-05-06 | 1.5 | 翌日接続をシームレス表示に変更・「── 翌日の運行 ──」セパレーター削除 |

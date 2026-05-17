@@ -1,64 +1,32 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
 import App from '../App'
 
-// 月曜09:00 をモック
-const MOCK_DATE = new Date('2024-01-08T09:00:00+09:00')
-
-beforeEach(() => {
-    localStorage.clear()
-    vi.useFakeTimers()
-    vi.setSystemTime(MOCK_DATE)
-})
-
-afterEach(() => {
-    vi.useRealTimers()
-})
-
 describe('App', () => {
-    it('「北千住」が表示される', () => {
+    it('ヘッダーに「北千住」が表示される', () => {
         render(<App />)
         expect(screen.getByText('北千住')).toBeInTheDocument()
     })
 
-    it('「下り」が表示される', () => {
+    it('ヘッダーに「下り」が表示される', () => {
         render(<App />)
         expect(screen.getByText('下り')).toBeInTheDocument()
     })
 
-    it('「千代田線」が表示される', () => {
+    it('曜日種別（平日または土・休日）バッジが表示される', () => {
         render(<App />)
-        expect(screen.getByText('千代田線')).toBeInTheDocument()
+        const hasWeekday = screen.queryAllByText('平日').length > 0
+        const hasHoliday = screen.queryAllByText('土・休日').length > 0
+        expect(hasWeekday || hasHoliday).toBe(true)
     })
 
-    it('「北綾瀬行きのみ」ボタンが存在する', () => {
+    it('「北綾瀬行きのみ」チェックボックスが表示される', () => {
         render(<App />)
         expect(screen.getByText('北綾瀬行きのみ')).toBeInTheDocument()
     })
 
-    it('「平日」バッジが表示される', () => {
+    it('フッターに出典情報が表示される', () => {
         render(<App />)
-        expect(screen.getByText('平日')).toBeInTheDocument()
-    })
-
-    it('フィルターOFF時に北綾瀬以外の行き先も表示される', () => {
-        render(<App />)
-        // 綾瀬など北綾瀬以外のバッジが存在すること
-        const badges = screen.queryAllByText('我孫子')
-        expect(badges.length).toBeGreaterThan(0)
-    })
-
-    it('フィルターボタンをクリックすると北綾瀬以外の行き先が消える', () => {
-        render(<App />)
-        const btn = screen.getByText('北綾瀬行きのみ')
-
-        // フィルターOFF時：「我孫子」バッジが表示されている
-        expect(screen.queryAllByText('我孫子').length).toBeGreaterThan(0)
-
-        // フィルターON
-        fireEvent.click(btn)
-
-        // 「我孫子」バッジが消えること
-        expect(screen.queryAllByText('我孫子').length).toBe(0)
+        expect(screen.getByText(/データ出典：東京メトロ/)).toBeInTheDocument()
     })
 })

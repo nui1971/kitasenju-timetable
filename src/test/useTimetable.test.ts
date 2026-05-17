@@ -1,0 +1,257 @@
+import { describe, it, expect } from 'vitest'
+import {
+    toAbsoluteMinutes,
+    toCurrentAbsoluteMinutes,
+    filterUpcomingTrains,
+    getNextDayType,
+    getServiceDay,
+    isHoliday,
+    getDayType,
+    buildCombinedTrains,
+} from '../hooks/useTimetable'
+import { formatMinutesUntil } from '../components/TrainRow'
+import type { Train } from '../data/timetable'
+
+const makeDate = (hour: number, minute: number): Date => {
+    const d = new Date()
+    d.setHours(hour, minute, 0, 0)
+    return d
+}
+
+const trains: Train[] = [
+    { hour: 10, minute: 0,  destination: '綾瀬',      trainType: '普通' },
+    { hour: 10, minute: 30, destination: '代々木上原', trainType: '普通' },
+    { hour: 11, minute: 0,  destination: '綾瀬',      trainType: '普通' },
+    { hour: 17, minute: 44, destination: '伊勢原',    trainType: '普通' },
+    { hour: 23, minute: 55, destination: '綾瀬',      trainType: '普通' },
+    { hour: 0,  minute: 15, destination: '綾瀬',      trainType: '普通' },
+]
+
+describe('toAbsoluteMinutes', () => {
+    it('通常時刻を分数に変換する', () => {
+        expect(toAbsoluteMinutes(10, 30)).toBe(630)
+    })
+
+    it('0時台は24時台として扱う', () => {
+        expect(toAbsoluteMinutes(0, 15)).toBe(24 * 60 + 15)
+    })
+
+    it('23時台を正しく変換する', () => {
+        expect(toAbsoluteMinutes(23, 55)).toBe(23 * 60 + 55)
+    })
+})
+
+describe('toCurrentAbsoluteMinutes', () => {
+    it('通常時刻を正しく変換する', () => {
+        expect(toCurrentAbsoluteMinutes(makeDate(10, 30))).toBe(630)
+    })
+
+    it('深夜0時台は24時台として扱う', () => {
+        expect(toCurrentAbsoluteMinutes(makeDate(0, 15))).toBe(24 * 60 + 15)
+    })
+
+    it('深夜1時台は25時台として扱う', () => {
+        expect(toCurrentAbsoluteMinutes(makeDate(1, 0))).toBe(25 * 60)
+    })
+
+    it('5時台以降は通常通り変換する', () => {
+        expect(toCurrentAbsoluteMinutes(makeDate(5, 0))).toBe(5 * 60)
+    })
+})
+
+describe('filterUpcomingTrains', () => {
+    it('現在時刻以降の列車のみ返す（10:15 → 5本）', () => {
+        // 10:00は過ぎているので除外、10:30以降5本が対象
+        const result = filterUpcomingTrains(trains, makeDate(10, 15))
+        expect(result).toHaveLength(5)
+        expect(result[0]).toMatchObject({ hour: 10, minute: 30 })
+    })
+
+    it('現在時刻と同じ列車も含める（10:00 → 6本）', () => {
+        const result = filterUpcomingTrains(trains, makeDate(10, 0))
+        expect(result).toHaveLength(6)
+        expect(result[0]).toMatchObject({ hour: 10, minute: 0 })
+    })
+
+    it('全列車が過ぎた場合は空配列を返す（0:16以降）', () => {
+        const now = makeDate(0, 16)
+        const result = filterUpcomingTrains(trains, now)
+        expect(result).toHaveLength(0)
+    })
+
+    it('深夜0時台の最終列車を正しくフィルタする（0:10 → 1本）', () => {
+        const result = filterUpcomingTrains(trains, makeDate(0, 10))
+        expect(result).toHaveLength(1)
+        expect(result[0]).toMatchObject({ hour: 0, minute: 15 })
+    })
+
+    it('23:56時点では0:15の1本のみ残る', () => {
+        const result = filterUpcomingTrains(trains, makeDate(23, 56))
+        expect(result).toHaveLength(1)
+        expect(result[0]).toMatchObject({ hour: 0, minute: 15 })
+    })
+})
+
+describe('getServiceDay', () => {
+    // getDay(): 0=日, 1=月, 2=火, 3=水, 4=木, 5=金, 6=土
+    const makeDateTime = (day: number, hour: number): Date => {
+        const d = new Date(2025, 0, 5 + day) // 2025-01-05 は日曜 (0)
+        d.setHours(hour, 0, 0, 0)
+        return d
+    }
+
+    it('通常時間帯（5時以降）は getDay() をそのまま返す', () => {
+        // 土曜 10:00 → サービス日 = 土曜 (6)
+        expect(getServiceDay(makeDateTime(6, 10))).toBe(6)
+    })
+
+    it('深夜0〜4時は前日のサービス日を返す', () => {
+        // 日曜 00:30 → 土曜のサービス日 (6)
+        expect(getServiceDay(makeDateTime(0, 0))).toBe(6)
+    })
+
+    it('日曜深夜2時は土曜のサービス日 (6) を返す', () => {
+        expect(getServiceDay(makeDateTime(0, 2))).toBe(6)
+    })
+
+    it('月曜00:30は日曜のサービス日 (0) を返す', () => {
+        expect(getServiceDay(makeDateTime(1, 0))).toBe(0)
+    })
+
+    it('5時ちょうどは新しいサービス日として扱う', () => {
+        // 日曜 05:00 → 日曜のサービス日 (0)
+        expect(getServiceDay(makeDateTime(0, 5))).toBe(0)
+    })
+
+    it('月曜05:00は月曜のサービス日 (1) を返す', () => {
+        expect(getServiceDay(makeDateTime(1, 5))).toBe(1)
+    })
+})
+
+describe('isHoliday', () => {
+    const holidays = new Set<string>(['2026-05-03', '2026-05-04', '2026-05-05'])
+
+    it('祝日リストに含まれる日付は true を返す', () => {
+        expect(isHoliday(new Date(2026, 4, 3), holidays)).toBe(true)
+    })
+
+    it('祝日リストに含まれない平日は false を返す', () => {
+        expect(isHoliday(new Date(2026, 4, 1), holidays)).toBe(false)
+    })
+
+    it('祝日リストが空の場合は常に false を返す', () => {
+        expect(isHoliday(new Date(2026, 4, 3), new Set())).toBe(false)
+    })
+})
+
+describe('getDayType（祝日判定含む）', () => {
+    // 2026-05-03（日）：憲法記念日
+    // 2026-05-04（月）：みどりの日（平日だが祝日）
+    // 2026-05-01（金）：平日
+    const holidays2026 = new Set<string>(['2026-05-03', '2026-05-04', '2026-05-05', '2026-05-06'])
+
+    it('祝日（2026-05-03 憲法記念日）が土休日ダイヤになること', () => {
+        expect(getDayType(new Date(2026, 4, 3), holidays2026)).toBe('holiday')
+    })
+
+    it('平日（2026-05-01）が平日ダイヤになること', () => {
+        expect(getDayType(new Date(2026, 4, 1), holidays2026)).toBe('weekday')
+    })
+
+    it('平日だが祝日リストに含まれる日（2026-05-04 月）が土休日ダイヤになること', () => {
+        // 曜日は月曜（平日）だが祝日リストに含まれるため holiday
+        expect(getDayType(new Date(2026, 4, 4), holidays2026)).toBe('holiday')
+    })
+
+    it('土曜は祝日リスト不問で土休日ダイヤになること', () => {
+        expect(getDayType(new Date(2026, 4, 2), new Set())).toBe('holiday')
+    })
+})
+
+describe('getNextDayType', () => {
+    it('終電後に翌日ダイヤに切り替わること（火曜→水曜＝平日）', () => {
+        // 2（火曜）→ 3（水曜）= 平日
+        expect(getNextDayType(2)).toBe('weekday')
+    })
+
+    it('金曜終電後は土休日ダイヤになること', () => {
+        // 5（金曜）→ 6（土曜）= 土休日
+        expect(getNextDayType(5)).toBe('holiday')
+    })
+
+    it('日曜終電後は平日ダイヤになること', () => {
+        // 0（日曜）→ 1（月曜）= 平日
+        expect(getNextDayType(0)).toBe('weekday')
+    })
+})
+
+// ───────────────────────────────────────────────
+// buildCombinedTrains: 当日・翌日シームレス統合
+// ───────────────────────────────────────────────
+const makeTrain = (hour: number, minute: number): Train => ({
+    hour, minute, destination: '綾瀬', trainType: '普通',
+})
+
+describe('buildCombinedTrains', () => {
+    // 当日残り3本・翌日10本を用意
+    const todayTrains = [makeTrain(23, 30), makeTrain(23, 45), makeTrain(0, 5)]
+    const nextDayTrains = Array.from({ length: 10 }, (_, i) => makeTrain(5, i * 7))
+
+    it('残り3本の場合、翌日2本で補完して合計5本を表示できる', () => {
+        const combined = buildCombinedTrains(todayTrains, nextDayTrains)
+        const displayed = combined.slice(0, 5)
+        // 合計5本
+        expect(displayed.length).toBe(5)
+        // 当日3本・翌日2本
+        expect(displayed.filter(x => !x.isNextDay).length).toBe(3)
+        expect(displayed.filter(x => x.isNextDay).length).toBe(2)
+    })
+
+    it('残り0本の場合、翌日5本のみ表示される', () => {
+        const combined = buildCombinedTrains([], nextDayTrains)
+        const displayed = combined.slice(0, 5)
+        expect(displayed.length).toBe(5)
+        expect(displayed.every(x => x.isNextDay)).toBe(true)
+    })
+
+    it('展開時・残り3本の場合、翌日7本で補完して合計10本を表示できる', () => {
+        const combined = buildCombinedTrains(todayTrains, nextDayTrains)
+        const displayed = combined.slice(0, 10)
+        expect(displayed.length).toBe(10)
+        // 当日3本・翌日7本
+        expect(displayed.filter(x => !x.isNextDay).length).toBe(3)
+        expect(displayed.filter(x => x.isNextDay).length).toBe(7)
+    })
+
+    it('isNextDay フラグが当日は false・翌日は true になること', () => {
+        const combined = buildCombinedTrains(todayTrains, nextDayTrains)
+        // 先頭3件は当日
+        combined.slice(0, 3).forEach(x => expect(x.isNextDay).toBe(false))
+        // 4件目以降は翌日
+        combined.slice(3).forEach(x => expect(x.isNextDay).toBe(true))
+    })
+})
+
+// ───────────────────────────────────────────────
+// 翌日データのあと何分計算
+// ───────────────────────────────────────────────
+describe('翌日データのあと何分計算', () => {
+    it('現在00:10・翌日05:00 → 290分 → 4時間50分後と表示される', () => {
+        // 00:10 は toCurrentAbsoluteMinutes で 24*60+10 = 1450 に変換される
+        const now = makeDate(0, 10)
+        const currentMinutes = toCurrentAbsoluteMinutes(now) // 1450
+        const trainMinutes = toAbsoluteMinutes(5, 0)         // 300
+        const offset = 1440                                   // 翌日オフセット
+        const diff = trainMinutes + offset - currentMinutes  // 290
+        expect(diff).toBe(290)
+        expect(formatMinutesUntil(diff)).toBe('4時間50分後')
+    })
+
+    it('60分ちょうどの場合は「1時間後」と表示される', () => {
+        expect(formatMinutesUntil(60)).toBe('1時間後')
+    })
+
+    it('59分の場合は「59分後」と表示される', () => {
+        expect(formatMinutesUntil(59)).toBe('59分後')
+    })
+})
