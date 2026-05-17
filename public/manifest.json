@@ -1,0 +1,14 @@
+{
+  "name": "北千住 下り時刻表",
+  "short_name": "北千住↓",
+  "description": "千代田線 北千住駅 下り時刻表",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1526",
+  "theme_color": "#00843d",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" },
+    { "src": "/icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

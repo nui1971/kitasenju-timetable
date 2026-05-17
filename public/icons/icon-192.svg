@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <!-- 背景 -->
+  <rect width="192" height="192" rx="30" fill="#0d1526"/>
+
+  <!-- 左上バッジ H22 -->
+  <rect x="8" y="8" width="30" height="12" rx="2" fill="#00843d"/>
+  <text x="23" y="17" font-size="6" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">H22</text>
+
+  <!-- 左上バッジ C18 -->
+  <rect x="42" y="8" width="30" height="12" rx="2" fill="#00843d"/>
+  <text x="57" y="17" font-size="6" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">C18</text>
+
+  <!-- 上部「千代田線」テキスト -->
+  <text x="96" y="38" font-size="12" font-weight="bold" fill="#00843d" text-anchor="middle" font-family="sans-serif">千代田線</text>
+
+  <!-- 駅名標：緑帯 -->
+  <rect x="20" y="48" width="152" height="68" rx="4" fill="#00843d"/>
+  <!-- 内側黒帯 -->
+  <rect x="26" y="56" width="140" height="52" rx="2" fill="#0d1526"/>
+  <!-- 駅名「北千住」 -->
+  <text x="96" y="92" font-size="26" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">北千住</text>
+
+  <!-- 下向き矢印 -->
+  <rect x="85" y="130" width="22" height="30" rx="2" fill="#00843d"/>
+  <polygon points="68,160 96,184 124,160" fill="#00843d"/>
+</svg>
