@@ -12,10 +12,9 @@ export const buildCombinedTrains = (
 ]
 
 // 列車時刻を深夜0時をまたいで比較できる絶対分数に変換する
-// 0時台は24時台として扱い、前日の終電と当日の始発を正しく区別する
-
+// 0〜3時台のみ翌日扱い（+24時間）、4時台以降は通常扱い
 export const toAbsoluteMinutes = (hour: number, minute: number): number => {
-    const h = hour < 5 ? hour + 24 : hour
+    const h = hour < 4 ? hour + 24 : hour
     return h * 60 + minute
 }
 

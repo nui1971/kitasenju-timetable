@@ -39,6 +39,10 @@ describe('toAbsoluteMinutes', () => {
     it('23時台を正しく変換する', () => {
         expect(toAbsoluteMinutes(23, 55)).toBe(23 * 60 + 55)
     })
+
+    it('4時台は翌日扱いせず通常の分数を返す（始発 4:54 → 294）', () => {
+        expect(toAbsoluteMinutes(4, 54)).toBe(4 * 60 + 54)
+    })
 })
 
 describe('toCurrentAbsoluteMinutes', () => {
