@@ -2,18 +2,12 @@ import { useState, useEffect } from 'react'
 import type { Train } from '../data/timetable'
 
 const STORAGE_KEY = 'kitasenju-filter-kitaayase'
-const KITA_AYASE = '北綾瀬'
 
-export const extractDestinations = (trains: Train[]): string[] => {
-    const set = new Set(trains.map(t => t.destination))
-    return Array.from(set).sort()
-}
+// 北綾瀬行きのみ抽出（純粋関数・テスト対象）
+export const filterKitaAyase = (trains: Train[]): Train[] =>
+    trains.filter(t => t.destination === '北綾瀬')
 
-export const filterByDestination = (trains: Train[], hiddenDestinations: Set<string>): Train[] => {
-    return trains.filter(t => !hiddenDestinations.has(t.destination))
-}
-
-export const useFilter = (allDayTrains: Train[], upcomingTrains: Train[]) => {
+export const useFilter = (upcomingTrains: Train[]) => {
     const [showOnlyKitaAyase, setShowOnlyKitaAyase] = useState<boolean>(() => {
         try {
             return localStorage.getItem(STORAGE_KEY) === 'true'
@@ -22,20 +16,13 @@ export const useFilter = (allDayTrains: Train[], upcomingTrains: Train[]) => {
         }
     })
 
-    const destinations = extractDestinations(allDayTrains)
-    const hiddenDestinations = new Set<string>()
-
-    const toggleKitaAyase = () => {
-        setShowOnlyKitaAyase(prev => !prev)
-    }
+    const toggleKitaAyase = () => setShowOnlyKitaAyase(prev => !prev)
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, String(showOnlyKitaAyase))
     }, [showOnlyKitaAyase])
 
-    const filteredTrains = showOnlyKitaAyase
-        ? upcomingTrains.filter(t => t.destination === KITA_AYASE)
-        : upcomingTrains
+    const filteredTrains = showOnlyKitaAyase ? filterKitaAyase(upcomingTrains) : upcomingTrains
 
-    return { destinations, hiddenDestinations, toggleDestination: toggleKitaAyase, showOnlyKitaAyase, toggleKitaAyase, filteredTrains }
+    return { showOnlyKitaAyase, toggleKitaAyase, filteredTrains }
 }

@@ -7,7 +7,7 @@ import { TrainList } from './components/TrainList'
 import { NextTrainCard } from './components/NextTrainCard'
 import { useCurrentTime } from './hooks/useCurrentTime'
 import { filterUpcomingTrains, getServiceDate, getDayType } from './hooks/useTimetable'
-import { useFilter, filterByDestination } from './hooks/useFilter'
+import { useFilter } from './hooks/useFilter'
 import { loadHolidays } from './services/holidayService'
 
 function App() {
@@ -41,12 +41,12 @@ function App() {
     const allDisplayDayTrains = allTrainsMap[displayDayType]
     const displayUpstreamTrains = isNextDay ? allDisplayDayTrains : upcomingTrains
 
-    const { showOnlyKitaAyase, toggleKitaAyase, filteredTrains } = useFilter(allDisplayDayTrains, displayUpstreamTrains)
+    const { showOnlyKitaAyase, toggleKitaAyase, filteredTrains } = useFilter(displayUpstreamTrains)
 
     // 残り列車が少ない（5本未満）場合は翌日分を接続表示
     const isLateNight = !isNextDay && upcomingTrains.length < 5
     const connectedTrains = useMemo(
-        () => isLateNight ? filterByDestination(allTrainsMap[nextDayType], new Set<string>()) : undefined,
+        () => isLateNight ? allTrainsMap[nextDayType] : undefined,
         [isLateNight, allTrainsMap, nextDayType]
     )
 
