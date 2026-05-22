@@ -1,14 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
   <rect width="192" height="192" rx="30" fill="#0d1526"/>
-  <rect x="8" y="8" width="30" height="12" rx="2" fill="#006400"/>
-  <text x="23" y="17" font-size="6" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">H22</text>
-  <rect x="42" y="8" width="30" height="12" rx="2" fill="#006400"/>
-  <text x="57" y="17" font-size="6" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">C18</text>
-  <text x="96" y="38" font-size="12" font-weight="bold" fill="#006400" text-anchor="middle" font-family="sans-serif">千代田線</text>
-  <rect x="20" y="48" width="152" height="68" rx="4" fill="#006400"/>
-  <rect x="26" y="56" width="140" height="52" rx="2" fill="#0d1526"/>
-  <text x="96" y="92" font-size="26" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">北千住</text>
-  <text x="96" y="128" font-size="14" font-weight="bold" fill="#006400" text-anchor="middle" font-family="sans-serif">↓ 下り</text>
-  <rect x="85" y="138" width="22" height="24" rx="2" fill="#006400"/>
-  <polygon points="68,162 96,182 124,162" fill="#006400"/>
+  <rect x="10" y="66" width="172" height="60" rx="6" fill="#00843d"/>
+  <rect x="16" y="72" width="160" height="48" rx="4" fill="#0d1526"/>
+  <text x="96" y="100"
+    font-family="'Noto Sans JP', sans-serif"
+    font-size="28" font-weight="700" fill="white"
+    text-anchor="middle" dominant-baseline="middle">北千住</text>
+  <text x="96" y="116"
+    font-family="Arial, sans-serif"
+    font-size="9" fill="#aaa"
+    text-anchor="middle">Kita-Senju</text>
+  <text x="96" y="52"
+    font-family="Arial, sans-serif"
+    font-size="12" font-weight="700" fill="#00843d"
+    text-anchor="middle">千代田線</text>
+  <!-- 下矢印 -->
+  <rect x="88" y="138" width="16" height="20" rx="2" fill="#00843d"/>
+  <polygon points="76,152 116,152 96,172" fill="#00843d"/>
+  <text x="144" y="162"
+    font-family="'Noto Sans JP', sans-serif"
+    font-size="14" font-weight="700" fill="#00843d"
+    text-anchor="middle">下り</text>
 </svg>

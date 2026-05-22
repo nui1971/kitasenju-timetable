@@ -1,14 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 背景 -->
   <rect width="512" height="512" rx="80" fill="#0d1526"/>
-  <rect x="20" y="20" width="80" height="32" rx="6" fill="#006400"/>
-  <text x="60" y="41" font-size="16" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">H22</text>
-  <rect x="108" y="20" width="80" height="32" rx="6" fill="#006400"/>
-  <text x="148" y="41" font-size="16" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">C18</text>
-  <text x="256" y="100" font-size="32" font-weight="bold" fill="#006400" text-anchor="middle" font-family="sans-serif">千代田線</text>
-  <rect x="56" y="130" width="400" height="180" rx="8" fill="#006400"/>
-  <rect x="68" y="150" width="376" height="140" rx="4" fill="#0d1526"/>
-  <text x="256" y="248" font-size="72" font-weight="bold" fill="white" text-anchor="middle" font-family="sans-serif">北千住</text>
-  <text x="256" y="310" font-size="36" font-weight="bold" fill="#006400" text-anchor="middle" font-family="sans-serif">↓ 下り</text>
-  <rect x="228" y="340" width="56" height="80" rx="4" fill="#006400"/>
-  <polygon points="180,420 256,490 332,420" fill="#006400"/>
+  
+  <!-- 千代田線グリーンの駅名標帯（横） -->
+  <rect x="32" y="180" width="448" height="152" rx="12" fill="#00843d"/>
+  
+  <!-- 白枠内側 -->
+  <rect x="44" y="192" width="424" height="128" rx="8" fill="#0d1526"/>
+  
+  <!-- 駅名：北千住 -->
+  <text x="256" y="274" 
+    font-family="'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif"
+    font-size="72" font-weight="700" fill="white" 
+    text-anchor="middle" dominant-baseline="middle">北千住</text>
+  
+  <!-- ローマ字 -->
+  <text x="256" y="310"
+    font-family="'Helvetica Neue', Arial, sans-serif"
+    font-size="24" font-weight="400" fill="#aaaaaa"
+    text-anchor="middle">Kita-Senju</text>
+  
+  <!-- 上部：路線名 -->
+  <text x="256" y="148"
+    font-family="'Noto Sans JP', 'Helvetica Neue', sans-serif"
+    font-size="28" font-weight="700" fill="#00843d"
+    text-anchor="middle">千代田線</text>
+  
+  <!-- 下り矢印（下部中央） -->
+  <!-- 矢印の軸 -->
+  <rect x="238" y="360" width="36" height="60" rx="4" fill="#00843d"/>
+  <!-- 矢印の頭 -->
+  <polygon points="196,400 316,400 256,460" fill="#00843d"/>
+  
+  <!-- 下り テキスト -->
+  <text x="380" y="420"
+    font-family="'Noto Sans JP', 'Helvetica Neue', sans-serif"
+    font-size="32" font-weight="700" fill="#00843d"
+    text-anchor="middle">下り</text>
+  
+  <!-- H22/C18 路線記号 -->
+  <rect x="56" y="60" width="80" height="40" rx="6" fill="#00843d"/>
+  <text x="96" y="86"
+    font-family="'Helvetica Neue', Arial, sans-serif"
+    font-size="22" font-weight="700" fill="white"
+    text-anchor="middle">H22</text>
+    
+  <rect x="148" y="60" width="80" height="40" rx="6" fill="#00843d"/>
+  <text x="188" y="86"
+    font-family="'Helvetica Neue', Arial, sans-serif"
+    font-size="22" font-weight="700" fill="white"
+    text-anchor="middle">C18</text>
 </svg>

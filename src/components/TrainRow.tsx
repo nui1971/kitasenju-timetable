@@ -1,4 +1,5 @@
 import type { Train, TrainType } from '../data/timetable'
+import { shortDest } from '../utils'
 
 interface TrainRowProps {
     train: Train
@@ -45,7 +46,7 @@ export const TrainRow = ({ train, isFirst, isLast, minutesUntil }: TrainRowProps
                 {formatTime(train.hour, train.minute)}
             </span>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '10px' }}>
-                <span style={{ color: 'white', fontSize: '14px' }}>{train.destination}</span>
+                <span style={{ color: 'white', fontSize: '14px' }}>{shortDest(train.destination)}</span>
                 <span style={{
                     ...badge,
                     fontSize: '11px',

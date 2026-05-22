@@ -1,5 +1,6 @@
 import type { Train, TrainType } from '../data/timetable'
 import { toAbsoluteMinutes, toCurrentAbsoluteMinutes } from '../hooks/useTimetable'
+import { shortDest } from '../utils'
 
 interface NextTrainCardProps {
     train: Train
@@ -44,7 +45,7 @@ export const NextTrainCard = ({ train, now, isNextDay }: NextTrainCardProps) => 
                     {formatTime(train.hour, train.minute)}
                 </span>
                 <span style={{ color: 'white', fontSize: '18px', fontWeight: 500 }}>
-                    {train.destination}行き
+                    {shortDest(train.destination)}行き
                 </span>
                 <span style={{
                     ...badge,
